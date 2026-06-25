@@ -34,18 +34,18 @@ const Index = () => {
   const [stage, setStage] = useState<'closed' | 'opening' | 'revealed'>('closed');
   const [loc, setLoc] = useState<Loc | null>(null);
   const [visited, setVisited] = useState(0);
-  const [searching, setSearching] = useState(false);
+  const [loading, setLoading] = useState(false);
   const panoRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<any>(null);
+  const pendingPanoRef = useRef<any>(null); // хранит найденную панораму до монтирования DOM
 
   const destroyPlayer = () => {
     if (playerRef.current) {
-      playerRef.current.destroy?.();
+      try { playerRef.current.destroy(); } catch (e) { console.warn(e); }
       playerRef.current = null;
     }
   };
 
-  // Ищет панораму, перебирая случайные локации, пока не найдёт ту, где она есть
   const findPanorama = (ymaps: any, pool: Loc[], onFound: (l: Loc, pano: any) => void) => {
     if (pool.length === 0) return;
     const idx = Math.floor(Math.random() * pool.length);
@@ -62,34 +62,46 @@ const Index = () => {
 
   const openDoor = () => {
     const ymaps = window.ymaps;
-    if (!ymaps) return;
-    setSearching(true);
+    if (!ymaps || loading) return;
+    destroyPlayer();
+    pendingPanoRef.current = null;
+    setLoading(true);
     setStage('opening');
     setVisited((v) => v + 1);
     ymaps.ready(() => {
-      findPanorama(ymaps, LOCATIONS, (found, pano) => {
+      findPanorama(ymaps, [...LOCATIONS], (found, pano) => {
+        pendingPanoRef.current = pano;
         setLoc(found);
-        setStage('revealed');
-        // даём DOM отрисоваться, затем строим плеер
-        setTimeout(() => {
-          if (!panoRef.current) return;
-          destroyPlayer();
-          panoRef.current.innerHTML = '';
-          playerRef.current = new ymaps.panorama.Player(panoRef.current, pano, {
-            controls: ['zoomControl', 'panoramaControl'],
-            suppressMapOpenBlock: true,
-          });
-          setSearching(false);
-        }, 60);
+        setStage('revealed'); // React отрисует DOM → useEffect смонтирует плеер
       });
     });
   };
 
+  // Монтируем плеер после того, как DOM контейнера готов
+  useEffect(() => {
+    if (stage !== 'revealed' || !panoRef.current || !pendingPanoRef.current) return;
+    const ymaps = window.ymaps;
+    if (!ymaps) return;
+    destroyPlayer();
+    panoRef.current.innerHTML = '';
+    ymaps.ready(() => {
+      if (!panoRef.current || !pendingPanoRef.current) return;
+      playerRef.current = new ymaps.panorama.Player(
+        panoRef.current,
+        pendingPanoRef.current,
+        { controls: ['zoomControl', 'panoramaControl'], suppressMapOpenBlock: true }
+      );
+      pendingPanoRef.current = null;
+      setLoading(false);
+    });
+  }, [stage, loc]);
+
   const reset = () => {
     destroyPlayer();
+    pendingPanoRef.current = null;
     setStage('closed');
     setLoc(null);
-    setSearching(false);
+    setLoading(false);
   };
 
   useEffect(() => () => destroyPlayer(), []);
@@ -138,7 +150,7 @@ const Index = () => {
             <div className="flex justify-center">
               <button
                 onClick={openDoor}
-                disabled={stage === 'opening'}
+                disabled={loading}
                 className="group relative animate-float"
                 aria-label="Открыть секретную дверь"
               >
@@ -153,10 +165,21 @@ const Index = () => {
                     }`}
                   >
                     <div className="flex h-full flex-col items-center justify-center gap-4">
-                      <div className="text-7xl">🚪</div>
-                      <div className="rounded-full border border-accent/50 px-4 py-1 font-display text-xs uppercase tracking-widest text-accent">
-                        нажми меня
-                      </div>
+                      {loading ? (
+                        <>
+                          <div className="text-6xl animate-pulse">🌍</div>
+                          <div className="rounded-full border border-secondary/50 px-4 py-1 font-display text-xs uppercase tracking-widest text-secondary">
+                            ищем локацию...
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="text-7xl">🚪</div>
+                          <div className="rounded-full border border-accent/50 px-4 py-1 font-display text-xs uppercase tracking-widest text-accent">
+                            нажми меня
+                          </div>
+                        </>
+                      )}
                       {/* Handle */}
                       <div className="absolute right-6 top-1/2 h-4 w-4 -translate-y-1/2 rounded-full bg-accent shadow-[0_0_15px_hsl(45,100%,58%)]" />
                     </div>

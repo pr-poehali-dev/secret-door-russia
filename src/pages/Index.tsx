@@ -33,21 +33,26 @@ export default function Index() {
   const playerRef = useRef<any>(null);
   const ymapsRef  = useRef<any>(null);
 
-  // Ждём ymaps один раз при монтировании
+  // Грузим ключ с бэкенда, потом динамически вставляем скрипт Яндекса
   useEffect(() => {
-    const tryInit = () => {
+    const CONFIG_URL = 'https://functions.poehali.dev/bc40d8ff-1a1b-4c92-b07a-7a5d40abe34c';
+
+    const waitForYmaps = () => {
       if (window.ymaps) {
-        console.log('[RUS] ymaps found, calling ready...');
-        window.ymaps.ready(() => {
-          console.log('[RUS] ymaps ready! panorama =', !!window.ymaps.panorama);
-          ymapsRef.current = window.ymaps;
-        });
+        window.ymaps.ready(() => { ymapsRef.current = window.ymaps; });
       } else {
-        console.log('[RUS] ymaps not yet, retrying...');
-        setTimeout(tryInit, 200);
+        setTimeout(waitForYmaps, 200);
       }
     };
-    tryInit();
+
+    fetch(CONFIG_URL)
+      .then(r => r.json())
+      .then(({ yandexMapsKey }) => {
+        const script = document.createElement('script');
+        script.src = `https://api-maps.yandex.ru/2.1/?lang=ru_RU&load=package.full&apikey=${yandexMapsKey}`;
+        script.onload = waitForYmaps;
+        document.head.appendChild(script);
+      });
   }, []);
 
   const destroyPlayer = () => {

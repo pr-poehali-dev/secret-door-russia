@@ -1,0 +1,12 @@
+{
+  "tests": [
+    {
+      "name": "Get config",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "expectedBody": {"yandexMapsKey": "string"},
+      "bodyMatcher": "partial"
+    }
+  ]
+}

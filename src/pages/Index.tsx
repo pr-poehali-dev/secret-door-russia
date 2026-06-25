@@ -37,8 +37,13 @@ export default function Index() {
   useEffect(() => {
     const tryInit = () => {
       if (window.ymaps) {
-        window.ymaps.ready(() => { ymapsRef.current = window.ymaps; });
+        console.log('[RUS] ymaps found, calling ready...');
+        window.ymaps.ready(() => {
+          console.log('[RUS] ymaps ready! panorama =', !!window.ymaps.panorama);
+          ymapsRef.current = window.ymaps;
+        });
       } else {
+        console.log('[RUS] ymaps not yet, retrying...');
         setTimeout(tryInit, 200);
       }
     };
@@ -63,17 +68,19 @@ export default function Index() {
   }, []);
 
   const tryLocations = useCallback((pool: Loc[], onDone: (l: Loc, pano: any) => void) => {
-    if (!pool.length || !ymapsRef.current) return;
+    if (!pool.length || !ymapsRef.current) { console.log('[RUS] tryLocations: pool empty or no ymaps'); return; }
     const idx       = Math.floor(Math.random() * pool.length);
     const candidate = pool[idx];
     const rest      = pool.filter((_, i) => i !== idx);
+    console.log('[RUS] locate:', candidate.name, candidate.coords);
     ymapsRef.current.panorama
       .locate(candidate.coords)
       .then((list: any[]) => {
+        console.log('[RUS] locate result:', candidate.name, list.length);
         if (list.length > 0) onDone(candidate, list[0]);
         else tryLocations(rest, onDone);
       })
-      .catch(() => tryLocations(rest, onDone));
+      .catch((e: any) => { console.error('[RUS] locate error:', e); tryLocations(rest, onDone); });
   }, []);
 
   const openDoor = useCallback(() => {

@@ -10,18 +10,20 @@ interface Loc {
 }
 
 const LOCATIONS: Loc[] = [
-  { name: 'Красная площадь', region: 'Москва', coords: [55.7539, 37.6208], emoji: '🏛️' },
-  { name: 'Дворцовая площадь', region: 'Санкт-Петербург', coords: [59.9387, 30.3162], emoji: '🌉' },
-  { name: 'Озеро Байкал', region: 'Иркутская область', coords: [51.8267, 104.8543], emoji: '🌊' },
-  { name: 'Казанский Кремль', region: 'Татарстан', coords: [55.7989, 49.1064], emoji: '🕌' },
-  { name: 'Набережная', region: 'Сочи', coords: [43.5855, 39.7231], emoji: '🌴' },
-  { name: 'Долина гейзеров', region: 'Камчатка', coords: [54.4337, 160.1411], emoji: '🌋' },
-  { name: 'Нижегородский Кремль', region: 'Нижний Новгород', coords: [56.3287, 44.0020], emoji: '🏰' },
-  { name: 'Куршская коса', region: 'Калининград', coords: [55.0850, 20.8200], emoji: '🏖️' },
-  { name: 'Площадь Минина', region: 'Владивосток', coords: [43.1155, 131.8855], emoji: '🚢' },
-  { name: 'Мамаев курган', region: 'Волгоград', coords: [48.7421, 44.5371], emoji: '🗿' },
-  { name: 'Кул-Шариф', region: 'Екатеринбург', coords: [56.8389, 60.6057], emoji: '🏙️' },
-  { name: 'Старый город', region: 'Псков', coords: [57.8194, 28.3318], emoji: '⛪' },
+  { name: 'Красная площадь', region: 'Москва', coords: [55.7536, 37.6210], emoji: '🏛️' },
+  { name: 'Тверская улица', region: 'Москва', coords: [55.7649, 37.6055], emoji: '🌃' },
+  { name: 'Невский проспект', region: 'Санкт-Петербург', coords: [59.9343, 30.3351], emoji: '🌉' },
+  { name: 'Дворцовая площадь', region: 'Санкт-Петербург', coords: [59.9390, 30.3158], emoji: '🏰' },
+  { name: 'Кремлёвская набережная', region: 'Казань', coords: [55.7969, 49.1064], emoji: '🕌' },
+  { name: 'Площадь 1905 года', region: 'Екатеринбург', coords: [56.8378, 60.5975], emoji: '🏙️' },
+  { name: 'Плотинка', region: 'Екатеринбург', coords: [56.8389, 60.6057], emoji: '🌊' },
+  { name: 'Большая Покровская', region: 'Нижний Новгород', coords: [56.3225, 44.0048], emoji: '🚶' },
+  { name: 'Морской вокзал', region: 'Сочи', coords: [43.5810, 39.7203], emoji: '🌴' },
+  { name: 'Площадь Ленина', region: 'Новосибирск', coords: [55.0302, 82.9204], emoji: '🎭' },
+  { name: 'Светланская улица', region: 'Владивосток', coords: [43.1155, 131.8855], emoji: '🚢' },
+  { name: 'Площадь Победы', region: 'Калининград', coords: [54.7156, 20.5070], emoji: '⛪' },
+  { name: 'Проспект Мира', region: 'Красноярск', coords: [56.0106, 92.8526], emoji: '🌲' },
+  { name: 'Улица Кирова', region: 'Самара', coords: [53.1959, 50.1002], emoji: '🏘️' },
 ];
 
 declare global {
@@ -32,58 +34,65 @@ const Index = () => {
   const [stage, setStage] = useState<'closed' | 'opening' | 'revealed'>('closed');
   const [loc, setLoc] = useState<Loc | null>(null);
   const [visited, setVisited] = useState(0);
+  const [searching, setSearching] = useState(false);
   const panoRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<any>(null);
 
-  const openDoor = () => {
-    const next = LOCATIONS[Math.floor(Math.random() * LOCATIONS.length)];
-    setLoc(next);
-    setStage('opening');
-    setVisited((v) => v + 1);
-    setTimeout(() => setStage('revealed'), 1100);
-  };
-
-  const reset = () => {
+  const destroyPlayer = () => {
     if (playerRef.current) {
       playerRef.current.destroy?.();
       playerRef.current = null;
     }
-    setStage('closed');
-    setLoc(null);
   };
 
-  useEffect(() => {
-    if (stage !== 'revealed' || !loc || !panoRef.current) return;
+  // Ищет панораму, перебирая случайные локации, пока не найдёт ту, где она есть
+  const findPanorama = (ymaps: any, pool: Loc[], onFound: (l: Loc, pano: any) => void) => {
+    if (pool.length === 0) return;
+    const idx = Math.floor(Math.random() * pool.length);
+    const candidate = pool[idx];
+    const rest = pool.filter((_, i) => i !== idx);
+    ymaps.panorama
+      .locate(candidate.coords)
+      .then((panoramas: any[]) => {
+        if (panoramas.length > 0) onFound(candidate, panoramas[0]);
+        else findPanorama(ymaps, rest, onFound);
+      })
+      .catch(() => findPanorama(ymaps, rest, onFound));
+  };
+
+  const openDoor = () => {
     const ymaps = window.ymaps;
     if (!ymaps) return;
+    setSearching(true);
+    setStage('opening');
+    setVisited((v) => v + 1);
     ymaps.ready(() => {
-      ymaps.panorama
-        .locate(loc.coords)
-        .then((panoramas: any[]) => {
+      findPanorama(ymaps, LOCATIONS, (found, pano) => {
+        setLoc(found);
+        setStage('revealed');
+        // даём DOM отрисоваться, затем строим плеер
+        setTimeout(() => {
           if (!panoRef.current) return;
+          destroyPlayer();
           panoRef.current.innerHTML = '';
-          if (panoramas.length > 0) {
-            playerRef.current = new ymaps.panorama.Player(panoRef.current, panoramas[0], {
-              controls: ['zoomControl'],
-            });
-          } else {
-            renderMapFallback(ymaps, loc);
-          }
-        })
-        .catch(() => renderMapFallback(ymaps, loc));
+          playerRef.current = new ymaps.panorama.Player(panoRef.current, pano, {
+            controls: ['zoomControl', 'panoramaControl'],
+            suppressMapOpenBlock: true,
+          });
+          setSearching(false);
+        }, 60);
+      });
     });
-  }, [stage, loc]);
-
-  const renderMapFallback = (ymaps: any, l: Loc) => {
-    if (!panoRef.current) return;
-    panoRef.current.innerHTML = '';
-    const map = new ymaps.Map(panoRef.current, {
-      center: l.coords,
-      zoom: 14,
-      controls: ['zoomControl'],
-    });
-    map.geoObjects.add(new ymaps.Placemark(l.coords, { iconCaption: l.name }));
   };
+
+  const reset = () => {
+    destroyPlayer();
+    setStage('closed');
+    setLoc(null);
+    setSearching(false);
+  };
+
+  useEffect(() => () => destroyPlayer(), []);
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-background bg-aurora">
@@ -174,8 +183,22 @@ const Index = () => {
               </div>
               <div
                 ref={panoRef}
-                className="h-[440px] w-full overflow-hidden rounded-[2rem] border-4 border-primary/40 bg-card door-glow"
+                className="h-[500px] w-full overflow-hidden rounded-[2rem] border-4 border-primary/40 bg-card door-glow"
               />
+              <div className="mt-4 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  <Icon name="MousePointer2" size={14} className="text-secondary" />
+                  Зажми и тяни — оглядись вокруг
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Icon name="MoveRight" size={14} className="text-secondary" />
+                  Кликай по стрелкам — иди по улице
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Icon name="Calendar" size={14} className="text-secondary" />
+                  Меняй дату съёмки в углу панорамы
+                </span>
+              </div>
               <div className="mt-6 flex flex-wrap justify-center gap-4">
                 <button
                   onClick={openDoor}

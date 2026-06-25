@@ -1,7 +1,7 @@
 import os
 
 def handler(event: dict, context) -> dict:
-    """Отдаёт публичный конфиг для фронтенда (ключ Яндекс Карт)."""
+    """Отдаёт публичный конфиг для фронтенда (ключ Яндекс Карт). v2"""
     if event.get('httpMethod') == 'OPTIONS':
         return {'statusCode': 200, 'headers': {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type'}, 'body': ''}
 

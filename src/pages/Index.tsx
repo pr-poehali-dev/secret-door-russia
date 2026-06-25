@@ -45,14 +45,10 @@ export default function Index() {
       }
     };
 
-    fetch(CONFIG_URL)
-      .then(r => r.json())
-      .then(({ yandexMapsKey }) => {
-        const script = document.createElement('script');
-        script.src = `https://api-maps.yandex.ru/2.1/?lang=ru_RU&load=package.full&apikey=${yandexMapsKey}`;
-        script.onload = waitForYmaps;
-        document.head.appendChild(script);
-      });
+    const script = document.createElement('script');
+    script.src = `https://api-maps.yandex.ru/2.1/?lang=ru_RU&load=package.full&apikey=850caa6b-ee34-496f-b574-dbd33b441cdd`;
+    script.onload = waitForYmaps;
+    document.head.appendChild(script);
   }, []);
 
   const destroyPlayer = () => {

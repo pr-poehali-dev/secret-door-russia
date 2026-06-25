@@ -4,35 +4,35 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 250 60% 5%;
+    --foreground: 60 20% 96%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 252 50% 9%;
+    --card-foreground: 60 20% 96%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 252 50% 9%;
+    --popover-foreground: 60 20% 96%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 330 90% 58%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 175 95% 50%;
+    --secondary-foreground: 250 60% 5%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 252 30% 16%;
+    --muted-foreground: 250 15% 65%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 45 100% 58%;
+    --accent-foreground: 250 60% 5%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 252 40% 20%;
+    --input: 252 40% 20%;
+    --ring: 330 90% 58%;
 
-    --radius: 0.5rem;
+    --radius: 1rem;
 
     --sidebar-background: 0 0% 98%;
 
@@ -97,5 +97,99 @@
 
   body {
     @apply bg-background text-foreground;
+    font-family: "Golos Text", sans-serif;
   }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: "Unbounded", sans-serif;
+  }
+  .text-glow-pink {
+    text-shadow:
+      0 0 20px hsl(330 90% 58% / 0.7),
+      0 0 40px hsl(330 90% 58% / 0.4);
+  }
+  .text-glow-cyan {
+    text-shadow:
+      0 0 20px hsl(175 95% 50% / 0.7),
+      0 0 40px hsl(175 95% 50% / 0.4);
+  }
+  .door-glow {
+    box-shadow:
+      0 0 60px hsl(330 90% 58% / 0.5),
+      0 0 120px hsl(175 95% 50% / 0.3),
+      inset 0 0 40px hsl(252 50% 4% / 0.8);
+  }
+  .bg-grid {
+    background-image:
+      linear-gradient(hsl(252 40% 20% / 0.4) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(252 40% 20% / 0.4) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+  .bg-aurora {
+    background:
+      radial-gradient(
+        ellipse 80% 60% at 20% 0%,
+        hsl(330 90% 30% / 0.5),
+        transparent
+      ),
+      radial-gradient(
+        ellipse 70% 60% at 90% 20%,
+        hsl(175 80% 25% / 0.4),
+        transparent
+      ),
+      radial-gradient(
+        ellipse 90% 70% at 50% 100%,
+        hsl(265 80% 30% / 0.5),
+        transparent
+      );
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-14px);
+  }
+}
+@keyframes door-open {
+  0% {
+    transform: perspective(1200px) rotateY(0deg);
+  }
+  100% {
+    transform: perspective(1200px) rotateY(-78deg);
+  }
+}
+@keyframes flash {
+  0% {
+    opacity: 0;
+  }
+  40% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes spin-slow {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.animate-float {
+  animation: float 5s ease-in-out infinite;
+}
+.animate-door-open {
+  animation: door-open 1.1s cubic-bezier(0.7, 0, 0.3, 1) forwards;
+  transform-origin: left center;
+}
+.animate-flash {
+  animation: flash 1.1s ease-out forwards;
+}
+.animate-spin-slow {
+  animation: spin-slow 22s linear infinite;
 }
